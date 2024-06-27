@@ -1,0 +1,160 @@
+terraform workspace = DEV, QA, Test, Prod
+
+Manging Coniguration for Different envirnoments
+
+1. dynamic value for varibales 
+2 Seprate State or State File
+3. Seprate the envinroment
+
+ separate your state and infrastructure without changing anything in your code.
+
+terraform workspace questions:
+
+
+
+
+
+
+
+2. Partial backend config terarform
+
+
+
+3. Seprate Git Braches for DEV QA PROD
+
+
+4. Seprate folder for DEV QA Prod
+
+5. dev.tfbackend
+
+key = dev/terraform.tfstate
+
+key = qa/terraform.tfstate
+
+
+key = prod/terraform.tfstate
+
+
+terraform init --backend = dev.tfbackend 
+
+terraform applay --tfvars = dev.tfvars
+
+
+
+
+Terraform FOr Largae Enterprises , Terraform Layout and roll out structure, how to start terraforming an organization that is using AWS cloud
+
+https://www.youtube.com/watch?v=yLldpHKfRIM
+
+
+
+
+terraform init \
+  -backend-config="bucket=your-terraform-backend-bucket-dev" \
+  -backend-config="key=terraform.tfstate" \
+  -backend-config="region=us-east-1" \
+  -backend-config="dynamodb_table=terraform-locks-dev" \
+  -backend-config="encrypt=true"
+
+terraform workspace new dev
+terraform workspace new qa
+terraform workspace new prod
+
+
+
+# For dev workspace
+terraform workspace select dev
+terraform init \
+  -backend-config="bucket=your-terraform-backend-bucket-dev" \
+  -backend-config="key=terraform.tfstate" \
+  -backend-config="region=us-east-1" \
+  -backend-config="dynamodb_table=terraform-locks-dev" \
+  -backend-config="encrypt=true" \
+  -backend-config="kms_key_id=<DEV_KMS_KEY_ARN>"
+terraform apply
+
+# For QA workspace
+terraform workspace select qa
+terraform init \
+  -backend-config="bucket=your-terraform-backend-bucket-qa" \
+  -backend-config="key=terraform.tfstate" \
+  -backend-config="region=us-west-1" \
+  -backend-config="dynamodb_table=terraform-locks-qa" \
+  -backend-config="encrypt=true" \
+  -backend-config="kms_key_id=<QA_KMS_KEY_ARN>"
+terraform apply
+
+# For prod workspace
+terraform workspace select prod
+terraform init \
+  -backend-config="bucket=your-terraform-backend-bucket-prod" \
+  -backend-config="key=terraform.tfstate" \
+  -backend-config="region=eu-west-1" \
+  -backend-config="dynamodb_table=terraform-locks-prod" \
+  -backend-config="encrypt=true" \
+  -backend-config="kms_key_id=<PROD_KMS_KEY_ARN>"
+terraform apply
+
+
+In this approach, each workspace (dev, qa, prod) uses its specific backend configuration parameters, ensuring separation and proper management of state files. The locals block helps in determining the values, and the terraform init -backend-config command sets the backend configuration dynamically based on the workspace context.
+
+
+ terraform init -backend-config bucket-terraform-workshop-opstree backend-config key statefile/tfworkshop.tfstate backend-config region-us-west-1 -backend-config dynamodb_table=terraform_workshop I
+
+
+
+terraform init -backend-config="dev.tfbackend"
+terraform plan -var-file="dev.tfvars"
+terraform plan -var-file="dev.tfvars" --auto-approve
+
+
+
+
+Seprate state files for Networking , application, db and other componenets
+
+networking.tf
+application.tf
+db.tf
+
+networking.tfstate
+application.tfstate
+db.tfstate
+
+
+Importa Data from Another Statefile from another WorkSpace Or Folder to the Current Worspace or Envinoment 
+
+
+Terraform Remote State 
+
+data.tf
+
+data "terraform_remote_state" "networking"  { 
+
+backend  "s3" 
+ config = { 
+ bucket = "remote-terraform-state-files" 
+ key = "networking.tf" 
+ region = "ap-southeast-2" 
+ 
+ } 
+ 
+ }
+ 
+ 
+resource  "aws_instance" "WebServer" {
+
+ami=data.aws_ami.ubuntu.id
+
+instance_type = "t3.micro" 
+subnet_id = data.terraform_remote_state.networking.outputs.subnet_az_a 
+tags = { Name = lower (data. terraform_remote_state.networking.outputs.environment_name) } 
+
+}
+
+
+
+
+terraform init with different directories
+
+terraform -chdir=./staging init 
+
